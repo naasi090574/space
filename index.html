@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Planets FX</title>
+
+<style>
+html,body{
+  margin:0;
+  height:100%;
+  background:transparent;
+}
+
+/* Контейнер */
+.wrap{
+  position:relative;
+  width:100vw;
+  height:100vh;
+  overflow:hidden;
+}
+
+/* ТВОЙ ФОН */
+.bg{
+  position:absolute;
+  inset:0;
+  background-image:url("https://img.genially.com/66f849d0f7b39c0016fdd814/70f21e67-6bdf-4cab-827b-00bc35db950f.png");
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+
+/* Слой эффектов (не мешает кликам) */
+.fx{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+
+/* Планеты */
+.spot{
+  position:absolute;
+  left:calc(var(--x)*1%);
+  top:calc(var(--y)*1%);
+  width:calc(var(--r)*1%);
+  height:calc(var(--r)*1%);
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  mix-blend-mode:screen;
+}
+
+.spot::before{
+  content:"";
+  position:absolute;
+  inset:-10%;
+  border-radius:50%;
+  background:radial-gradient(circle,
+    rgba(120,220,255,.6),
+    rgba(90,160,255,.2) 40%,
+    transparent 70%);
+  box-shadow:0 0 30px rgba(120,200,255,.5);
+}
+
+/* Пульсация */
+@keyframes pulse{
+  0%{transform:translate(-50%,-50%) scale(1)}
+  50%{transform:translate(-50%,-50%) scale(1.08)}
+  100%{transform:translate(-50%,-50%) scale(1)}
+}
+
+/* Вибрация */
+@keyframes jitter{
+  0%,100%{transform:translate(-50%,-50%)}
+  25%{transform:translate(-49%,-51%)}
+  50%{transform:translate(-51%,-49%)}
+  75%{transform:translate(-50%,-48%)}
+}
+
+/* Солнце «дышит» */
+@keyframes sun{
+  0%{transform:translate(-50%,-50%) scale(1)}
+  50%{transform:translate(-50%,-50%) scale(1.15)}
+  100%{transform:translate(-50%,-50%) scale(1)}
+}
+
+.pulse{animation:pulse 3s ease-in-out infinite}
+.jitter{animation:jitter .4s linear infinite}
+.sun{animation:sun 2.5s ease-in-out infinite}
+
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+  <div class="bg"></div>
+  <div class="fx">
+
+    <!-- СОЛНЦЕ -->
+    <div class="spot sun" style="--x:48;--y:39;--r:18"></div>
+
+    <!-- ПЛАНЕТЫ -->
+    <div class="spot pulse" style="--x:18;--y:41;--r:12"></div>
+    <div class="spot pulse" style="--x:33;--y:23;--r:11"></div>
+    <div class="spot jitter" style="--x:62;--y:19;--r:11"></div>
+    <div class="spot pulse" style="--x:78;--y:26;--r:10"></div>
+    <div class="spot pulse" style="--x:86;--y:45;--r:12"></div>
+    <div class="spot jitter" style="--x:18;--y:72;--r:12"></div>
+    <div class="spot pulse" style="--x:48;--y:75;--r:14"></div>
+    <div class="spot pulse" style="--x:72;--y:70;--r:13"></div>
+
+  </div>
+</div>
+
+</body>
+</html>
