@@ -1,157 +1,162 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Space Map FX</title>
-  <style>
-    html, body { margin:0; height:100%; background:transparent; }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Space Map FX (soft)</title>
+<style>
+  html, body { margin:0; height:100%; background:transparent; }
 
-    /* 16:9 сцена, растягиваемая под iframe */
-    .stage{
-      position:relative;
-      width:100vw; height:100vh;
-      overflow:hidden;
-      background:transparent;
-      user-select:none;
-    }
+  .stage{
+    position:relative;
+    width:100vw; height:100vh;
+    overflow:hidden;
+    background:transparent;
+    user-select:none;
+  }
 
-    /* Фон */
-    .bg{
-      position:absolute; inset:0;
-      background-image:url("https://img.genially.com/66f849d0f7b39c0016fdd814/4c94885f-c983-4c2a-922d-db02fc7669b6.png");
-      background-size:cover;
-      background-position:center;
-      background-repeat:no-repeat;
-      transform: translateZ(0);
-    }
+  .bg{
+    position:absolute; inset:0;
+    background-image:url("https://img.genially.com/66f849d0f7b39c0016fdd814/4c94885f-c983-4c2a-922d-db02fc7669b6.png");
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    transform: translateZ(0);
+  }
 
-    /* Слой планет — не перехватывает клики */
-    .layer{
-      position:absolute; inset:0;
-      pointer-events:none;
-      transform: translateZ(0);
-    }
+  /* слой планет не перехватывает клики Genially */
+  .layer{
+    position:absolute; inset:0;
+    pointer-events:none;
+    transform: translateZ(0);
+  }
 
-    /* Общий стиль объекта (планета/солнце) */
-    .obj{
-      position:absolute;
-      left: calc(var(--x) * 1%);
-      top:  calc(var(--y) * 1%);
-      width: calc(var(--s) * 1%);
-      transform: translate(-50%, -50%);
-      will-change: transform, filter, opacity;
-      filter: drop-shadow(0 0 10px rgba(120,200,255,.25));
-    }
+  /* объект */
+  .obj{
+    position:absolute;
+    left: calc(var(--x) * 1%);
+    top:  calc(var(--y) * 1%);
+    width: calc(var(--s) * 1%);
+    transform: translate(-50%, -50%);
+    will-change: transform, filter, opacity;
+    filter: drop-shadow(0 0 10px rgba(120,200,255,.18));
+  }
+  .obj img{ width:100%; height:auto; display:block; }
 
-    .obj img{
-      width:100%;
-      height:auto;
-      display:block;
-      transform: translateZ(0);
-    }
+  /* очень мягкое "плавание" */
+  @keyframes drift {
+    0%   { transform: translate(-50%,-50%) translate(0,0); }
+    50%  { transform: translate(-50%,-50%) translate(var(--dx, 6px), var(--dy, -6px)); }
+    100% { transform: translate(-50%,-50%) translate(0,0); }
+  }
 
-    /* ===== АНИМАЦИИ ===== */
+  /* тихое вращение "вокруг оси" (чуть-чуть) */
+  @keyframes spin {
+    0%   { transform: rotate(0deg) scale(1); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
 
-    /* мягкая пульсация */
-    @keyframes pulse {
-      0%   { transform: translate(-50%,-50%) scale(1);    filter: drop-shadow(0 0 10px rgba(120,200,255,.20)); }
-      50%  { transform: translate(-50%,-50%) scale(1.07); filter: drop-shadow(0 0 18px rgba(160,120,255,.35)); }
-      100% { transform: translate(-50%,-50%) scale(1);    filter: drop-shadow(0 0 10px rgba(120,200,255,.20)); }
-    }
+  /* солнце дышит */
+  @keyframes sunbreathe {
+    0%   { transform: translate(-50%,-50%) scale(1);    filter: drop-shadow(0 0 18px rgba(255,210,120,.55)); }
+    50%  { transform: translate(-50%,-50%) scale(1.10); filter: drop-shadow(0 0 32px rgba(255,160,60,.65)); }
+    100% { transform: translate(-50%,-50%) scale(1);    filter: drop-shadow(0 0 18px rgba(255,210,120,.55)); }
+  }
 
-    /* лёгкая дрожь (очень аккуратно) */
-    @keyframes jitter {
-      0%   { transform: translate(-50%,-50%) translate(0,0) scale(1.01); }
-      25%  { transform: translate(-50%,-50%) translate(1px,-1px) scale(1.01); }
-      50%  { transform: translate(-50%,-50%) translate(-1px,1px) scale(1.01); }
-      75%  { transform: translate(-50%,-50%) translate(1px,1px) scale(1.01); }
-      100% { transform: translate(-50%,-50%) translate(0,0) scale(1.01); }
-    }
+  /* комбинации */
+  .soft    { animation: drift var(--t, 6.5s) ease-in-out infinite; }
+  .soft2   { animation: drift var(--t, 7.8s) ease-in-out infinite; }
+  .sun     { animation: sunbreathe 3.2s ease-in-out infinite; }
 
-    /* “плавание” вверх-вниз */
-    @keyframes floaty {
-      0%   { transform: translate(-50%,-50%) translateY(0); }
-      50%  { transform: translate(-50%,-50%) translateY(-10px); }
-      100% { transform: translate(-50%,-50%) translateY(0); }
-    }
+  /* вращение делаем на вложенной обёртке, чтобы не ломать drift */
+  .spinwrap{
+    width:100%;
+    height:auto;
+    transform-origin: 50% 50%;
+    animation: spin var(--spin, 28s) linear infinite;
+  }
 
-    /* лёгкое покачивание */
-    @keyframes wobble {
-      0%   { transform: translate(-50%,-50%) rotate(0deg); }
-      50%  { transform: translate(-50%,-50%) rotate(2.2deg); }
-      100% { transform: translate(-50%,-50%) rotate(0deg); }
-    }
-
-    /* солнце “дышит” сильнее + сияние */
-    @keyframes sunbreathe {
-      0%   { transform: translate(-50%,-50%) scale(1);    filter: drop-shadow(0 0 18px rgba(255,210,120,.55)); }
-      50%  { transform: translate(-50%,-50%) scale(1.14); filter: drop-shadow(0 0 32px rgba(255,160,60,.65)); }
-      100% { transform: translate(-50%,-50%) scale(1);    filter: drop-shadow(0 0 18px rgba(255,210,120,.55)); }
-    }
-
-    /* назначаем классы */
-    .pulse   { animation: pulse var(--t, 2.8s) ease-in-out infinite; }
-    .jitter  { animation: jitter var(--t, .35s) linear infinite; opacity:.95; }
-    .floaty  { animation: floaty var(--t, 3.6s) ease-in-out infinite; }
-    .wobble  { animation: wobble var(--t, 4.2s) ease-in-out infinite; }
-    .sun     { animation: sunbreathe var(--t, 2.4s) ease-in-out infinite; }
-
-    /* чуть-чуть “голографичности” */
-    .holo{
-      filter: drop-shadow(0 0 10px rgba(120,200,255,.22)) saturate(1.08);
-    }
-  </style>
+  /* чуть “голографичности”, но не кислотно */
+  .holo{ filter: drop-shadow(0 0 10px rgba(120,200,255,.18)) saturate(1.05); }
+</style>
 </head>
 
 <body>
-  <div class="stage" id="stage">
-    <div class="bg"></div>
+<div class="stage">
+  <div class="bg"></div>
 
-    <div class="layer" id="layer">
-      <!-- Солнце -->
-      <div class="obj sun" style="--x:48; --y:41; --s:18; --t:2.5s;">
-        <img alt="Sun" src="https://img.genially.com/66f849d0f7b39c0016fdd814/6a425c26-c61f-4555-a309-1ec82d948b4b.png">
-      </div>
+  <div class="layer">
 
-      <!-- Планеты (позиции можно подвинуть на 1–2% при необходимости) -->
-      <div class="obj pulse holo"  style="--x:16; --y:33; --s:12; --t:3.0s;">
-        <img alt="Planet 1" src="https://img.genially.com/66f849d0f7b39c0016fdd814/c6de0d78-b89e-49c3-8e1f-a8ba6991f57d.png">
-      </div>
-
-      <div class="obj floaty holo" style="--x:33; --y:19; --s:11; --t:3.8s;">
-        <img alt="Planet 2" src="https://img.genially.com/66f849d0f7b39c0016fdd814/f1983add-91d7-4e5c-bb4d-c237c9c13f0c.png">
-      </div>
-
-      <div class="obj wobble holo" style="--x:63; --y:19; --s:11; --t:4.6s;">
-        <img alt="Planet 3" src="https://img.genially.com/66f849d0f7b39c0016fdd814/1c873579-9f4d-4f9c-ad3c-87afeef0ede5.png">
-      </div>
-
-      <div class="obj jitter holo" style="--x:82; --y:23; --s:10.5; --t:.33s;">
-        <img alt="Planet 4" src="https://img.genially.com/66f849d0f7b39c0016fdd814/03eae86e-f9b1-462d-a100-ad7953b91864.png">
-      </div>
-
-      <div class="obj pulse holo"  style="--x:86; --y:46; --s:13; --t:2.7s;">
-        <img alt="Planet 5" src="https://img.genially.com/66f849d0f7b39c0016fdd814/256edf0a-7638-48f8-9651-ea6f8a4eea33.png">
-      </div>
-
-      <div class="obj jitter holo" style="--x:17; --y:70; --s:13; --t:.36s;">
-        <img alt="Planet 6" src="https://img.genially.com/66f849d0f7b39c0016fdd814/defff084-0e8f-4a05-93fa-4615588f5442.png">
-      </div>
-
-      <div class="obj floaty holo" style="--x:45; --y:71; --s:14; --t:3.5s;">
-        <img alt="Planet 7" src="https://img.genially.com/66f849d0f7b39c0016fdd814/e3e59a8b-ca48-41f1-8370-98e67423b7d1.png">
-      </div>
-
-      <div class="obj pulse holo"  style="--x:63; --y:73; --s:14; --t:3.1s;">
-        <img alt="Planet 8" src="https://img.genially.com/66f849d0f7b39c0016fdd814/1eb6c58a-6262-4895-9afe-589f7a14ba93.png">
-      </div>
-
-      <div class="obj wobble holo" style="--x:74; --y:60; --s:13; --t:4.9s;">
-        <img alt="Planet 9" src="https://img.genially.com/66f849d0f7b39c0016fdd814/eeefc785-62ad-42b5-8c5c-c752292656c3.png">
-      </div>
-
+    <!-- СОЛНЦЕ (центр) -->
+    <div class="obj sun" style="--x:50; --y:44; --s:22;">
+      <img alt="Sun" src="https://img.genially.com/66f849d0f7b39c0016fdd814/6a425c26-c61f-4555-a309-1ec82d948b4b.png">
     </div>
+
+    <!-- ПЛАНЕТЫ: разнесены + разные размеры + тихий drift + тихий spin -->
+    <!-- Левая "пончиковая" -->
+    <div class="obj soft holo" style="--x:10; --y:40; --s:13; --t:7.6s; --dx:6px; --dy:-5px;">
+      <div class="spinwrap" style="--spin:34s;">
+        <img alt="P9" src="https://img.genially.com/66f849d0f7b39c0016fdd814/eeefc785-62ad-42b5-8c5c-c752292656c3.png">
+      </div>
+    </div>
+
+    <!-- Маленькая с кольцами сверху слева -->
+    <div class="obj soft2 holo" style="--x:28; --y:16; --s:9; --t:8.4s; --dx:-5px; --dy:-4px;">
+      <div class="spinwrap" style="--spin:40s;">
+        <img alt="P5" src="https://img.genially.com/66f849d0f7b39c0016fdd814/256edf0a-7638-48f8-9651-ea6f8a4eea33.png">
+      </div>
+    </div>
+
+    <!-- Голубая сверху (подальше — меньше) -->
+    <div class="obj soft holo" style="--x:68; --y:20; --s:11; --t:7.2s; --dx:5px; --dy:-6px;">
+      <div class="spinwrap" style="--spin:30s;">
+        <img alt="P2" src="https://img.genially.com/66f849d0f7b39c0016fdd814/f1983add-91d7-4e5c-bb4d-c237c9c13f0c.png">
+      </div>
+    </div>
+
+    <!-- Оранжевая сверху справа -->
+    <div class="obj soft2 holo" style="--x:90; --y:22; --s:11.5; --t:8.8s; --dx:6px; --dy:-4px;">
+      <div class="spinwrap" style="--spin:36s;">
+        <img alt="P3" src="https://img.genially.com/66f849d0f7b39c0016fdd814/1c873579-9f4d-4f9c-ad3c-87afeef0ede5.png">
+      </div>
+    </div>
+
+    <!-- Зелёная справа (побольше) -->
+    <div class="obj soft holo" style="--x:86; --y:55; --s:13.5; --t:7.9s; --dx:5px; --dy:6px;">
+      <div class="spinwrap" style="--spin:32s;">
+        <img alt="P1" src="https://img.genially.com/66f849d0f7b39c0016fdd814/c6de0d78-b89e-49c3-8e1f-a8ba6991f57d.png">
+      </div>
+    </div>
+
+    <!-- Сине-белая справа снизу -->
+    <div class="obj soft2 holo" style="--x:72; --y:72; --s:13; --t:9.2s; --dx:-6px; --dy:5px;">
+      <div class="spinwrap" style="--spin:38s;">
+        <img alt="P6" src="https://img.genially.com/66f849d0f7b39c0016fdd814/defff084-0e8f-4a05-93fa-4615588f5442.png">
+      </div>
+    </div>
+
+    <!-- Фиолетовая прозрачная снизу (самая крупная близко к зрителю) -->
+    <div class="obj soft holo" style="--x:56; --y:80; --s:16; --t:8.1s; --dx:6px; --dy:4px;">
+      <div class="spinwrap" style="--spin:42s;">
+        <img alt="P8" src="https://img.genially.com/66f849d0f7b39c0016fdd814/1eb6c58a-6262-4895-9afe-589f7a14ba93.png">
+      </div>
+    </div>
+
+    <!-- Техно-планета снизу по центру (чуть меньше) -->
+    <div class="obj soft2 holo" style="--x:44; --y:86; --s:12.5; --t:8.7s; --dx:-5px; --dy:6px;">
+      <div class="spinwrap" style="--spin:28s;">
+        <img alt="P4" src="https://img.genially.com/66f849d0f7b39c0016fdd814/03eae86e-f9b1-462d-a100-ad7953b91864.png">
+      </div>
+    </div>
+
+    <!-- Тёмная фиолетовая слева снизу -->
+    <div class="obj soft holo" style="--x:12; --y:78; --s:14; --t:9.0s; --dx:6px; --dy:5px;">
+      <div class="spinwrap" style="--spin:44s;">
+        <img alt="P7" src="https://img.genially.com/66f849d0f7b39c0016fdd814/e3e59a8b-ca48-41f1-8370-98e67423b7d1.png">
+      </div>
+    </div>
+
   </div>
+</div>
 </body>
 </html>
